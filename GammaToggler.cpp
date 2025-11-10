@@ -1,88 +1,113 @@
 #include <windows.h>
 #include <cmath>
+#include <fstream>
+#include <iostream>
 
-// Stores the original LUT to restore
-static WORD OriginalRamp[3][256];
+static WORD OriginalLUT[3][256];
 static bool OriginalSaved = false;
 
-static double new_gamma = 2.19;
+const char* STATE_FILE = "state.dat";
+const char* LUT_FILE   = "original_lut.bin";
 
-// Saves the current LUT only once
+// Save LUT to file
+void SaveLUTToFile(WORD lut[3][256]) {
+    std::ofstream out(LUT_FILE, std::ios::binary);
+    out.write((char*)lut, sizeof(WORD) * 3 * 256);
+}
+
+// Load LUT from file
+bool LoadLUTFromFile(WORD lut[3][256]) {
+    std::ifstream in(LUT_FILE, std::ios::binary);
+    if (!in.good()) return false;
+    in.read((char*)lut, sizeof(WORD) * 3 * 256);
+    return true;
+}
+
+// Write modified=0 or modified=1
+void WriteState(bool modified) {
+    std::ofstream out(STATE_FILE);
+    out << "modified=" << (modified ? "1" : "0") << "\n";
+}
+
+// Read state file
+bool ReadState() {
+    std::ifstream in(STATE_FILE);
+    if (!in.good()) return false;
+
+    std::string line;
+    std::getline(in, line);
+    return (line == "modified=1");
+}
+
+// Save current original LUT from system
 void SaveOriginalLUT(HDC hdc) {
     if (!OriginalSaved) {
-        GetDeviceGammaRamp(hdc, OriginalRamp);
+        GetDeviceGammaRamp(hdc, OriginalLUT);
+        SaveLUTToFile(OriginalLUT);
+        WriteState(false);
         OriginalSaved = true;
     }
 }
 
-// Restores the original LUT
+// Restore LUT from memory and file
 void RestoreOriginalLUT(HDC hdc) {
-    if (OriginalSaved) {
-        SetDeviceGammaRamp(hdc, OriginalRamp);
+    WORD temp[3][256];
+    if (LoadLUTFromFile(temp)) {
+        SetDeviceGammaRamp(hdc, temp);
     }
+    WriteState(false);
 }
 
-// Applies a custom gamma curve
 void ApplyGamma(double gamma) {
     HDC hdc = GetDC(NULL);
-
-    SaveOriginalLUT(hdc); // capture original once
+    SaveOriginalLUT(hdc);
 
     WORD ramp[3][256];
 
     for (int i = 0; i < 256; i++) {
         double value = pow(i / 255.0, 1.0 / gamma) * 65535.0;
         if (value > 65535) value = 65535;
-        ramp[0][i] = (WORD)value;
-        ramp[1][i] = (WORD)value;
-        ramp[2][i] = (WORD)value;
+        ramp[0][i] = ramp[1][i] = ramp[2][i] = (WORD)value;
     }
 
     SetDeviceGammaRamp(hdc, ramp);
+    WriteState(true);
     ReleaseDC(NULL, hdc);
 }
 
-// No-console entry point
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpCmdLine, int nCmdShow)
-{
-    // Save original LUT at startup
-    HDC hdc = GetDC(NULL);
-    SaveOriginalLUT(hdc);
-    ReleaseDC(NULL, hdc);
+int WINAPI WinMain(HINSTANCE h, HINSTANCE p, LPSTR cmd, int show) {
 
-    bool usingNewGamma = false;
+    // Detect crash from last run
+    if (ReadState()) {
+        HDC hdc = GetDC(NULL);
+        RestoreOriginalLUT(hdc); // restore on program start
+        ReleaseDC(NULL, hdc);
+    }
+
+    // Ready for normal operation
+    bool usingGamma = false;
 
     while (true) {
 
-        // Toggle between original and new_gamma
+        // Toggle gamma
         if (GetAsyncKeyState(VK_F9) & 1) {
-            usingNewGamma = !usingNewGamma;
-            if (usingNewGamma)
-                ApplyGamma(new_gamma);      // your requested gamma
+            usingGamma = !usingGamma;
+            if (usingGamma) ApplyGamma(2.19);
             else {
-                HDC hdc2 = GetDC(NULL);
-                RestoreOriginalLUT(hdc2);  // restore system's gamma
-                ReleaseDC(NULL, hdc2);
+                HDC hdc = GetDC(NULL);
+                RestoreOriginalLUT(hdc);
+                ReleaseDC(NULL, hdc);
             }
         }
 
-        // Reset to 1 gamma on F11 (usual default)
-        if (GetAsyncKeyState(VK_F11) & 1) {
-            usingNewGamma = false;
-            ApplyGamma(1.0);
-        }
-
-        // Exit program on F12 (restore original LUT)
-        if (GetAsyncKeyState(VK_F12) & 1) {
-            break;
-        }
+        // Exit on F12
+        if (GetAsyncKeyState(VK_F12) & 1) break;
 
         Sleep(30);
     }
 
-    // Restore original LUT on exit
-    hdc = GetDC(NULL);
+    // clean exit
+    HDC hdc = GetDC(NULL);
     RestoreOriginalLUT(hdc);
     ReleaseDC(NULL, hdc);
 
