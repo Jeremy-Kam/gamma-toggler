@@ -92,7 +92,7 @@ int WINAPI WinMain(HINSTANCE h, HINSTANCE p, LPSTR cmd, int show) {
     while (true) {
 
         // Toggle gamma
-        if (GetAsyncKeyState(VK_F9) & 1) {
+        if (GetAsyncKeyState(VK_F3) & 1) {
             usingGamma = !usingGamma;
             if (usingGamma) ApplyGamma(new_gamma);
             else {
