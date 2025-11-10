@@ -9,6 +9,8 @@ static bool OriginalSaved = false;
 const char* STATE_FILE = "state.dat";
 const char* LUT_FILE   = "original_lut.bin";
 
+const double new_gamma = 2.19; // Best setting for Tarkov/ARC Raiders
+
 // Save LUT to file
 void SaveLUTToFile(WORD lut[3][256]) {
     std::ofstream out(LUT_FILE, std::ios::binary);
@@ -92,7 +94,7 @@ int WINAPI WinMain(HINSTANCE h, HINSTANCE p, LPSTR cmd, int show) {
         // Toggle gamma
         if (GetAsyncKeyState(VK_F9) & 1) {
             usingGamma = !usingGamma;
-            if (usingGamma) ApplyGamma(2.19);
+            if (usingGamma) ApplyGamma(new_gamma);
             else {
                 HDC hdc = GetDC(NULL);
                 RestoreOriginalLUT(hdc);
