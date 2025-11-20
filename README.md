@@ -38,4 +38,4 @@ g++ GammaToggler.cpp -o GammaToggler.exe -lgdi32 -mwindows
 Originally developed for using it with ARC Raiders or other competitive video games with dark environments, where having a higher gamma can give you an advantage. Morally, this is in a grey area, but it doesn't mess with the game itself. All it does is change the display, which anyone can do natively using NVIDIA Control Panel. You could also do something similar by making sure the room is as dark as possible and making the screen as bright as possible. I would recommend pinning the executable to start, so you can quickly start it up when starting up the game, and it will run in the background until you press F12.
 
 ## Night Vision Toggler
-The extended version of this program. Also changes digital vibrance and contrast to the optimal Escape from Tarkov settings, but requires more dependencies and is harder to set up.
+The extended version of this program, found [here](https://github.com/Jeremy-Kam/night-vision-toggler). Also changes digital vibrance and contrast to the optimal Escape from Tarkov settings, but requires more dependencies and is harder to set up.
