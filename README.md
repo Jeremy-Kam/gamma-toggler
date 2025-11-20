@@ -29,6 +29,7 @@ The short of it is:
 5. Edit Path, add new entries: ```C:\MinGW\bin``` and ```C:\MinGW\MSYS\1.0\bin```
 6. To test if it worked, go to command prompt and type in ```g++ --version``` and you should see an output stating the version you have. If not, something went wrong and you should probably watch the video.
 
+## Compiling the Program
 ```bat
 g++ GammaToggler.cpp -o GammaToggler.exe -lgdi32 -mwindows
 ```
